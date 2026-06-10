@@ -31,6 +31,17 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Route registrations
+// Ensure DB is connected for serverless environments (Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('Database connection error in middleware:', error);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
+});
+
 app.use('/api/auth', authRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/settings', settingsRouter);
@@ -63,4 +74,10 @@ async function startServer() {
   }
 }
 
-startServer();
+// Only start the server if not running in a Vercel serverless environment
+if (process.env.VERCEL !== '1') {
+  startServer();
+}
+
+// Export the app for Vercel
+export default app;
